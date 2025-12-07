@@ -1,21 +1,41 @@
 "use client";
+
 import { useState } from "react";
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit() {
-    setLoading(true);
-    const res = await fetch("/api/summarize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: input }),
-    });
+    if (!input.trim()) {
+      setError("Please enter some text to summarize.");
+      return;
+    }
 
-    const data = await res.json();
-    setSummary(data.summary);
+    setLoading(true);
+    setError("");
+    setSummary("");
+
+    try {
+      const res = await fetch("/api/summarizer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: input }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong.");
+      } else {
+        setSummary(data.summary);
+      }
+    } catch (err) {
+      setError("Network error. Try again.");
+    }
+
     setLoading(false);
   }
 
@@ -41,6 +61,12 @@ export default function Home() {
         >
           {loading ? "Summarizing..." : "Summarize"}
         </button>
+
+        {error && (
+          <p className="mt-4 text-red-600 bg-red-100 p-3 rounded-lg border">
+            {error}
+          </p>
+        )}
 
         {summary && (
           <div className="mt-10 p-6 bg-white border rounded-lg shadow">
